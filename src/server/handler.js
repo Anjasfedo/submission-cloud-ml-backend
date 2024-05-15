@@ -1,7 +1,7 @@
 const predictClassification = require("../services/inferenceServices");
 const crypto = require("crypto");
 
-const predictionHistories = []; // Temporary storage for prediction data
+const { storeData, getData } = require("../services/storeData");
 
 const postPredictHandler = async (request, h) => {
   const { image } = request.payload;
@@ -20,7 +20,7 @@ const postPredictHandler = async (request, h) => {
     createdAt,
   };
 
-  predictionHistories.push(newPrediction);
+  await storeData(id, newPrediction);
 
   return h
     .response({
@@ -32,21 +32,23 @@ const postPredictHandler = async (request, h) => {
 };
 
 const getPredictHistoriesHandler = async (request, h) => {
+  const histories = await getData();
+  const formattedHistories = histories.map((data) => ({
+    id: data.id,
+    history: {
+      result: data.result,
+      createdAt: data.createdAt,
+      suggestion: data.suggestion,
+      id: data.id,
+    },
+  }));
+
   return h
     .response({
       status: "success",
-      data: predictionHistories.map((prediction) => ({
-        id: prediction.id,
-        history: {
-          result: prediction.result,
-          createdAt: prediction.createdAt,
-          suggestion: prediction.suggestion,
-          id: prediction.id,
-        },
-      })),
+      data: formattedHistories,
     })
     .code(200);
 };
-
 
 module.exports = { postPredictHandler, getPredictHistoriesHandler };
