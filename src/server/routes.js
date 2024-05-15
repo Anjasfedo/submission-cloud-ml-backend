@@ -1,4 +1,7 @@
-const postPredictHandler = require("../server/handler");
+const {
+  postPredictHandler,
+  getPredictHistoriesHandler,
+} = require("../server/handler");
 
 const routes = [
   {
@@ -9,9 +12,14 @@ const routes = [
       payload: {
         allow: "multipart/form-data",
         multipart: true,
-        maxBytes: 1000000,
+        maxBytes: 1000 * 1000,
       },
     },
+  },
+  {
+    path: "/predict/histories",
+    method: "GET",
+    handler: getPredictHistoriesHandler,
   },
 ];
 

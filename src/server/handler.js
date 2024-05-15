@@ -1,41 +1,52 @@
-const Boom = require("@hapi/boom");
 const predictClassification = require("../services/inferenceServices");
-const tf = require("@tensorflow/tfjs-node");
+const crypto = require("crypto");
+
+const predictionHistories = []; // Temporary storage for prediction data
 
 const postPredictHandler = async (request, h) => {
-  try {
-    const { image } = request.payload;
+  const { image } = request.payload;
 
-    if (!image) {
-      throw Boom.badRequest("File gambar tidak ditemukan");
-    }
+  const { model } = request.server.app;
 
-    const { model } = request.server.app;
+  const { result, suggestion } = await predictClassification(model, image);
 
-    // Proses prediksi
-    const predictionResult = await predictClassification(model, image);
+  const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
 
-    return h
-      .response({
-        status: "success",
-        data: predictionResult,
-      })
-      .code(200);
-  } catch (error) {
-    if (error.isBoom) {
-      throw error;
-    } else if (error.message === "Error in prediction") {
-      const newResponse = h.response({
-        status: "fail",
-        message: "Terjadi kesalahan dalam melakukan prediksi",
-      });
-      newResponse.code(400);
-      return newResponse;
-    } else {
-      console.error("Error dalam prediksi:", error);
-      throw Boom.badRequest("Terjadi kesalahan dalam melakukan prediksi");
-    }
-  }
+  const newPrediction = {
+    id,
+    result,
+    suggestion,
+    createdAt,
+  };
+
+  predictionHistories.push(newPrediction);
+
+  return h
+    .response({
+      status: "success",
+      message: "Model is predicted successfully",
+      data: newPrediction,
+    })
+    .code(201);
 };
 
-module.exports = postPredictHandler;
+const getPredictHistoriesHandler = async (request, h) => {
+  return h
+    .response({
+      status: "success",
+      data: predictionHistories.map((prediction) => ({
+        id: prediction.id,
+        history: {
+          result: prediction.result,
+          createdAt: prediction.createdAt,
+          suggestion: prediction.suggestion,
+          id: prediction.id,
+        },
+      })),
+    })
+    .code(200);
+};
+
+
+module.exports = { postPredictHandler, getPredictHistoriesHandler };

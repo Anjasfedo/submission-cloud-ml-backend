@@ -1,4 +1,5 @@
 const tf = require("@tensorflow/tfjs-node");
+const InputError = require("../exceptions/InputError");
 
 async function predictClassification(model, image) {
   try {
@@ -12,15 +13,19 @@ async function predictClassification(model, image) {
     const score = await prediction.data();
     const confidenceScore = Math.max(...score) * 100;
 
-    const classification = confidenceScore > 50 ? "Cancer" : "Non-cancer";
+    const result = confidenceScore > 50 ? "Cancer" : "Non-cancer";
 
-    return {
-      classification,
-      confidence: confidenceScore,
-    };
+    let suggestion;
+
+    if (result == "Cancer") {
+      suggestion = "Segera periksa ke dokter!";
+    } else {
+      suggestion = "Anda sehat!";
+    }
+
+    return { result, suggestion };
   } catch (error) {
-    console.error("Error occurred during prediction:", error);
-    throw new Error("Error in prediction"); // Membuang error yang ditangkap agar dapat ditangani di tempat lain
+    throw new InputError(`Terjadi kesalahan dalam melakukan prediksi`);
   }
 }
 
