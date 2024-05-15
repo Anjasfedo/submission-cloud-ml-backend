@@ -2,6 +2,7 @@ const Hapi = require("@hapi/hapi");
 const routes = require("./routes");
 require("dotenv").config();
 const loadModel = require("../services/loadModel");
+const InputError = require("../exceptions/inputError");
 
 const initServer = async () => {
   const server = Hapi.server({
@@ -13,7 +14,6 @@ const initServer = async () => {
       },
     },
   });
-  
   server.route(routes);
 
   const model = await loadModel();
@@ -40,6 +40,13 @@ const initServer = async () => {
             "Payload content length greater than maximum allowed: 1000000",
         });
         newResponse.code(413);
+        return newResponse;
+      } else if (response.output.statusCode === 400) {
+        const newResponse = h.response({
+          status: "fail",
+          message: "Terjadi kesalahan dalam melakukan prediksi",
+        });
+        newResponse.code(400);
         return newResponse;
       } else {
         const newResponse = h.response({
