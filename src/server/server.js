@@ -1,8 +1,8 @@
 const Hapi = require("@hapi/hapi");
 const routes = require("./routes");
-require("dotenv").config();
 const loadModel = require("../services/loadModel");
 const InputError = require("../exceptions/InputError");
+require("dotenv").config();
 
 const initServer = async () => {
   const server = Hapi.server({
@@ -17,7 +17,7 @@ const initServer = async () => {
 
   const model = await loadModel();
   server.app.model = model;
-  
+
   server.route(routes);
 
   server.ext("onPreResponse", function (request, h) {

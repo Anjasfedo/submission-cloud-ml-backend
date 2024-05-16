@@ -1,7 +1,7 @@
 const tf = require("@tensorflow/tfjs-node");
 const InputError = require("../exceptions/InputError");
 
-async function predictClassification(model, image) {
+const predictClassification = async (model, image) => {
   try {
     const tensor = tf.node
       .decodeJpeg(image)
@@ -27,6 +27,6 @@ async function predictClassification(model, image) {
   } catch (error) {
     throw new InputError(`Terjadi kesalahan dalam melakukan prediksi`);
   }
-}
+};
 
 module.exports = predictClassification;
