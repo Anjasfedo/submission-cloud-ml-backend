@@ -4,34 +4,58 @@ const crypto = require("crypto");
 const { storeData, getDatas } = require("../services/storeData");
 
 const postPredictHandler = async (request, h) => {
-  const { image } = request.payload;
+  try {
+    const { image } = request.payload;
 
-  const { model } = request.server.app;
+    if (!image) {
+      return h
+        .response({ status: "error", message: "No image provided" })
+        .code(400);
+    }
 
-  const { result, suggestion } = await predictClassification(model, image);
+    const { model } = request.server.app;
 
-  const id = crypto.randomUUID();
-  const createdAt = new Date().toISOString();
+    const classIndices = {
+      cardboard: 0,
+      glass: 1,
+      metal: 2,
+      paper: 3,
+      plastic: 4,
+    };
 
-  const newPrediction = {
-    id,
-    result,
-    suggestion,
-    createdAt,
-  };
+    const { predictedClass, predictions } = await predictClassification(
+      image, // Pass image data directly
+      model,
+      classIndices
+    );
 
-  await storeData(id, newPrediction);
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
 
-  const response = h
-    .response({
-      status: "success",
-      message: "Model is predicted successfully",
-      data: newPrediction,
-    })
-    .code(201);
+    const newPrediction = {
+      id,
+      predictedClass,
+      predictions,
+      createdAt,
+    };
 
-  return response;
+    // await storeData(id, newPrediction);
+
+    return h
+      .response({
+        status: "success",
+        message: "Model predicted successfully",
+        data: newPrediction,
+      })
+      .code(201);
+  } catch (error) {
+    console.error("Error predicting:", error);
+    return h
+      .response({ status: "error", message: "Failed to predict" })
+      .code(500);
+  }
 };
+
 
 const getPredictHistoriesHandler = async (request, h) => {
   const histories = await getDatas();

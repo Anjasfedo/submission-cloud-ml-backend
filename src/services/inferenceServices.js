@@ -1,31 +1,28 @@
 const tf = require("@tensorflow/tfjs-node");
 const InputError = require("../exceptions/InputError");
 
-const predictClassification = async (model, image) => {
+const predictClassification = async (image, model, classIndices) => {
   try {
-    const tensor = tf.node
-      .decodeJpeg(image)
-      .resizeNearestNeighbor([224, 224])
-      .expandDims()
-      .toFloat();
 
-    const prediction = model.predict(tensor);
-    const score = await prediction.data();
-    const confidenceScore = Math.max(...score) * 100;
+    // Preprocess the image
+    const imgTensor = tf.node.decodeImage(image);
+    const resizedTensor = tf.image.resizeBilinear(imgTensor, [240, 240]);
+    const expandedTensor = resizedTensor.expandDims();
+    const normalizedTensor = expandedTensor.div(255); // Rescale to [0, 1]
 
-    const result = confidenceScore > 50 ? "Cancer" : "Non-cancer";
+    // Predict the class
+    const predictions = model.predict(normalizedTensor);
+    const predictionData = await predictions.data();
+    const predictedClassIndex = predictionData.indexOf(
+      Math.max(...predictionData)
+    );
+    const predictedClass = Object.keys(classIndices)[predictedClassIndex];
 
-    let suggestion;
-
-    if (result == "Cancer") {
-      suggestion = "Segera periksa ke dokter!";
-    } else {
-      suggestion = "Anda sehat!";
-    }
-
-    return { result, suggestion };
+    return { predictedClass, predictions: predictionData };
   } catch (error) {
-    throw new InputError(`Terjadi kesalahan dalam melakukan prediksi`);
+    throw new InputError(
+      `An error occurred while predicting: ${error.message}`
+    );
   }
 };
 
