@@ -3,6 +3,17 @@ const crypto = require("crypto");
 
 const { storeData, getDatas } = require("../services/storeData");
 
+const color_palette = {
+  light: ["#ffffff", "#ffc8dd", "#ffafcc", "#bde0fe", "#a2d2ff"],
+  dark: ["#03045e", "#832161", "#363062", "#751628", "#bc455a"],
+  "mid-light": ["#fff8e7", "#b91d2e", "#a2d6f9", "#fd969a", "#e6ccb2"],
+  "mid-dark": ["#8c001a", "#d7c0d0", "#64113f", "#2e294e", "#f29ca3"],
+};
+
+const getColorRecommendation = (predictedClassName) => {
+  return color_palette[predictedClassName] || [];
+};
+
 const postPredictHandler = async (request, h) => {
   try {
     const { image } = request.payload;
@@ -15,28 +26,27 @@ const postPredictHandler = async (request, h) => {
 
     const { model } = request.server.app;
 
-    const classIndices = {
-      cardboard: 0,
-      glass: 1,
-      metal: 2,
-      paper: 3,
-      plastic: 4,
-    };
+    const CLASS_NAMES = ["dark", "light", "mid-dark", "mid-light"];
 
-    const { predictedClass, predictions } = await predictClassification(
-      image, // Pass image data directly
-      model,
-      classIndices
-    );
+    const { predictedClassName, predictions, predictedClassIndex } =
+      await predictClassification(
+        image, // Pass image data directly
+        model,
+        CLASS_NAMES
+      );
 
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
 
+    const recommendation = getColorRecommendation(predictedClassName);
+
     const newPrediction = {
       id,
-      predictedClass,
+      predictedClassName,
       predictions,
+      predictedClassIndex,
       createdAt,
+      recommendation,
     };
 
     // await storeData(id, newPrediction);

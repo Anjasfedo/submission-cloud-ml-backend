@@ -1,28 +1,29 @@
 const tf = require("@tensorflow/tfjs-node");
 const InputError = require("../exceptions/InputError");
 
-const predictClassification = async (image, model, classIndices) => {
+const predictClassification = async (image, model, classList) => {
   try {
-
-    // Preprocess the image
+    // Load and preprocess the image
     const imgTensor = tf.node.decodeImage(image);
-    const resizedTensor = tf.image.resizeBilinear(imgTensor, [240, 240]);
-    const expandedTensor = resizedTensor.expandDims();
-    const normalizedTensor = expandedTensor.div(255); // Rescale to [0, 1]
+    const resizedImg = tf.image.resizeBilinear(imgTensor, [416, 416]);
+    const expandedImg = resizedImg.expandDims();
+    const normalizedImg = expandedImg.div(255);
 
     // Predict the class
-    const predictions = model.predict(normalizedTensor);
+    const predictions = model.predict(normalizedImg);
     const predictionData = await predictions.data();
     const predictedClassIndex = predictionData.indexOf(
       Math.max(...predictionData)
     );
-    const predictedClass = Object.keys(classIndices)[predictedClassIndex];
+    const predictedClassName = classList[predictedClassIndex];
 
-    return { predictedClass, predictions: predictionData };
+    return {
+      predictedClassName,
+      predictions: predictionData,
+      predictedClassIndex,
+    };
   } catch (error) {
-    throw new InputError(
-      `An error occurred while predicting: ${error.message}`
-    );
+    throw new Error(`An error occurred while predicting: ${error.message}`);
   }
 };
 
